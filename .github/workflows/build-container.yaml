@@ -1,0 +1,26 @@
+---
+name: Build and Sign Optimism tx-overload Container
+
+on:
+  push:
+    branches:
+      - "master"
+  workflow_dispatch:
+
+jobs:
+  build-container-op-tx-overload:
+    uses: celo-org/reusable-workflows/.github/workflows/container-cicd.yaml@v2.0.4
+    name: Build Optimism tx-overload image container
+    permissions:
+      contents: read
+      id-token: write
+      security-events: write
+    with:
+      artifact-registry: us-west1-docker.pkg.dev/devopsre/dev-images/tx-overload
+      tags: test
+      platforms: linux/amd64
+      workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-tx-overload/providers/github-by-repos
+      service-account: tx-overload@devopsre.iam.gserviceaccount.com
+      context: .
+      file: Dockerfile
+      trivy: false
