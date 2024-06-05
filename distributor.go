@@ -42,10 +42,10 @@ func NewDistributor(txmgrCfg txmgr.CLIConfig, l log.Logger, m *Metrics) (*Distri
 
 	// override L1 defaults
 	txmgrCfg.NumConfirmations = 1
-	txmgrCfg.NetworkTimeout = time.Second * 2
-	txmgrCfg.ResubmissionTimeout = time.Second * 8
-	txmgrCfg.ReceiptQueryInterval = time.Second * 2
-	txmgrCfg.TxNotInMempoolTimeout = time.Second * 6
+	txmgrCfg.NetworkTimeout = time.Second * 1
+	txmgrCfg.ResubmissionTimeout = time.Second * 4
+	txmgrCfg.ReceiptQueryInterval = time.Second * 1
+	txmgrCfg.TxNotInMempoolTimeout = time.Second * 3
 	txmgrCfg.SafeAbortNonceTooLowCount = 2
 	root, err := txmgr.NewSimpleTxManager("root", logger, m, txmgrCfg)
 	if err != nil {
@@ -58,10 +58,10 @@ func NewDistributor(txmgrCfg txmgr.CLIConfig, l log.Logger, m *Metrics) (*Distri
 			L1RPCURL:                  txmgrCfg.L1RPCURL,
 			PrivateKey:                key,
 			NumConfirmations:          1,
-			NetworkTimeout:            time.Second * 4,
-			ResubmissionTimeout:       time.Second * 8,
-			ReceiptQueryInterval:      time.Second * 2,
-			TxNotInMempoolTimeout:     time.Second * 12,
+			NetworkTimeout:            time.Second * 1,
+			ResubmissionTimeout:       time.Second * 4,
+			ReceiptQueryInterval:      time.Second * 1,
+			TxNotInMempoolTimeout:     time.Second * 3,
 			SafeAbortNonceTooLowCount: 2,
 		}
 		if err := cfg.Check(); err != nil {

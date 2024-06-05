@@ -27,10 +27,15 @@ var (
 		Value:  20,
 		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "NUM_DISTRIBUTORS"),
 	}
+	BlockTimeFlag = cli.Int64Flag{
+		Name:   "block-time-ms",
+		Value:  1000,
+		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "BLOCK_TIME"),
+	}
 )
 
 func init() {
-	flags = append(flags, EthRpcFlag, DataRateFlag, NumDistributors)
+	flags = append(flags, EthRpcFlag, DataRateFlag, NumDistributors, BlockTimeFlag)
 	flags = append(flags, oplog.CLIFlags(envVarPrefix)...)
 	flags = append(flags, txmgr.CLIFlags(envVarPrefix)...)
 	flags = append(flags, opmetrics.CLIFlags(envVarPrefix)...)

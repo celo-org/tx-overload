@@ -24,6 +24,7 @@ type TxOverload struct {
 	BytesPerSecond  int
 	StartTime       time.Time
 	NumDistributors int
+	BlockTimeMs		  int
 }
 
 func (t *TxOverload) generateTxCandidate() (txmgr.TxCandidate, error) {
@@ -51,7 +52,7 @@ func (t *TxOverload) Start() {
 	ctx := context.Background()
 	t.Distrbutor.Start()
 
-	const blockTimeMs = 2000
+	var blockTimeMs = t.BlockTimeMs
 	tickRate := time.Duration(blockTimeMs/t.NumDistributors) * time.Millisecond
 	ticker := time.NewTicker(tickRate)
 	defer ticker.Stop()
@@ -110,6 +111,8 @@ func Main(cliCtx *cli.Context) error {
 	numDistributors := cliCtx.GlobalInt(NumDistributors.Name)
 	distributors = keys[:numDistributors]
 
+	blockTimeMs := cliCtx.GlobalInt(BlockTimeFlag.Name)
+
 	metricsCfg := opmetrics.ReadCLIConfig(cliCtx)
 	m := NewMetrics()
 	if metricsCfg.Enabled {
@@ -130,6 +133,7 @@ func Main(cliCtx *cli.Context) error {
 		Distrbutor:      distributor,
 		BytesPerSecond:  cliCtx.GlobalInt(DataRateFlag.Name),
 		NumDistributors: numDistributors,
+		BlockTimeMs: blockTimeMs,
 	}
 	go t.Start()
 
