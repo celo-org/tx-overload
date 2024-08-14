@@ -16,6 +16,12 @@ var (
 		Required: true,
 		EnvVar:   opservice.PrefixEnvVar(envVarPrefix, "ETH_RPC"),
 	}
+	TxModeFlag = cli.StringFlag{
+		Name:   "tx-mode",
+		Usage:  "type of transaction. Valid values are 'random' and 'stableTx'.",
+		Value:  "random",
+		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "TX_MODE"),
+	}
 	DataRateFlag = cli.Int64Flag{
 		Name:   "data-rate",
 		Usage:  "data rate in bytes per second.",
@@ -35,7 +41,7 @@ var (
 )
 
 func init() {
-	flags = append(flags, EthRpcFlag, DataRateFlag, NumDistributors, BlockTimeFlag)
+	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, BlockTimeFlag)
 	flags = append(flags, oplog.CLIFlags(envVarPrefix)...)
 	flags = append(flags, txmgr.CLIFlags(envVarPrefix)...)
 	flags = append(flags, opmetrics.CLIFlags(envVarPrefix)...)

@@ -43,8 +43,8 @@ func (t *TxOverload) generateTxCandidate() (txmgr.TxCandidate, error) {
 		return t.generateRandomTxCandidate()
 	case StableTx:
 		return t.generateStableTxCandidate()
-	// case Mix:
-	// 	return t.generateMixTxCandidate()
+		// case Mix:
+		// 	return t.generateMixTxCandidate()
 	}
 	return txmgr.TxCandidate{}, nil
 }
@@ -186,6 +186,7 @@ func Main(cliCtx *cli.Context) error {
 
 	t := &TxOverload{
 		Distrbutor:      distributor,
+		TxMode:          TxModeType(cliCtx.GlobalString(TxModeFlag.Name)),
 		BytesPerSecond:  cliCtx.GlobalInt(DataRateFlag.Name),
 		NumDistributors: numDistributors,
 		BlockTimeMs:     blockTimeMs,
