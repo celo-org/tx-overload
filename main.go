@@ -16,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli"
-	"golang.org/x/crypto/sha3"
 )
 
 var logger log.Logger
@@ -81,12 +80,12 @@ func (t *TxOverload) generateErc20TxCandidate() (txmgr.TxCandidate, error) {
 	paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
 	// Get the transfer function signature
-	transferFnSignature := []byte("transfer(address,uint256)") // do not include spaces in the string
-	hash := sha3.NewLegacyKeccak256()
-	hash.Write(transferFnSignature)
-	methodID := hash.Sum(nil)[:4]
+	// transferFnSignature := []byte("transfer(address,uint256)") // do not include spaces in the string
+	// hash := sha3.NewLegacyKeccak256()
+	// hash.Write(transferFnSignature)
+	// methodID := hash.Sum(nil)[:4]
 	// fmt.Println(hexutil.Encode(methodID)) // 0xa9059cbb
-	// methodID := common.Hex2Bytes("0xa9059cbb")
+	methodID := common.Hex2Bytes("a9059cbb")
 
 	var data []byte
 	data = append(data, methodID...)
