@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli"
+	"golang.org/x/crypto/sha3"
 )
 
 var logger log.Logger
@@ -23,8 +24,8 @@ var logger log.Logger
 type TxModeType string
 
 const (
-	Random   TxModeType = "random"
-	StableTx TxModeType = "stableTx"
+	Random TxModeType = "random"
+	Erc20  TxModeType = "erc20"
 	// Mix      TxModeType = "mix"
 )
 
@@ -41,8 +42,8 @@ func (t *TxOverload) generateTxCandidate() (txmgr.TxCandidate, error) {
 	switch t.TxMode {
 	case Random:
 		return t.generateRandomTxCandidate()
-	case StableTx:
-		return t.generateStableTxCandidate()
+	case Erc20:
+		return t.generateErc20TxCandidate()
 		// case Mix:
 		// 	return t.generateMixTxCandidate()
 	}
@@ -70,7 +71,7 @@ func (t *TxOverload) generateRandomTxCandidate() (txmgr.TxCandidate, error) {
 	}, nil
 }
 
-func (t *TxOverload) generateStableTxCandidate() (txmgr.TxCandidate, error) {
+func (t *TxOverload) generateErc20TxCandidate() (txmgr.TxCandidate, error) {
 	amount := big.NewInt(0) // send 0 to don't mind about balance
 	// cUSD default address
 	tokenAddress := common.HexToAddress("0x765DE816845861e75A25fCA122bb6898B8B1282a")
@@ -80,12 +81,12 @@ func (t *TxOverload) generateStableTxCandidate() (txmgr.TxCandidate, error) {
 	paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
 	// Get the transfer function signature
-	// transferFnSignature := []byte("transfer(address,uint256)") // do not include spaces in the string
-	// hash := sha3.NewLegacyKeccak256()
-	// hash.Write(transferFnSignature)
-	// methodID := hash.Sum(nil)[:4]
+	transferFnSignature := []byte("transfer(address,uint256)") // do not include spaces in the string
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write(transferFnSignature)
+	methodID := hash.Sum(nil)[:4]
 	// fmt.Println(hexutil.Encode(methodID)) // 0xa9059cbb
-	methodID := common.Hex2Bytes("0xa9059cbb")
+	// methodID := common.Hex2Bytes("0xa9059cbb")
 
 	var data []byte
 	data = append(data, methodID...)

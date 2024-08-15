@@ -18,7 +18,7 @@ var (
 	}
 	TxModeFlag = cli.StringFlag{
 		Name:   "tx-mode",
-		Usage:  "type of transaction. Valid values are 'random' and 'stableTx'.",
+		Usage:  "type of transaction. Valid values are 'random' and 'erc20'.",
 		Value:  "random",
 		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "TX_MODE"),
 	}
