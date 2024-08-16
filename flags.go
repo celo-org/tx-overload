@@ -33,6 +33,11 @@ var (
 		Value:  20,
 		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "NUM_DISTRIBUTORS"),
 	}
+	StartingIndex = cli.Int64Flag{
+		Name:   "starting-index",
+		Value:  0,
+		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "STARTING_INDEX"),
+	}
 	BlockTimeFlag = cli.Int64Flag{
 		Name:   "block-time-ms",
 		Value:  1000,

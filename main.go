@@ -164,7 +164,8 @@ func Main(cliCtx *cli.Context) error {
 	}
 
 	numDistributors := cliCtx.GlobalInt(NumDistributors.Name)
-	distributors = keys[:numDistributors]
+	startingIndex := cliCtx.GlobalInt(StartingIndex.Name)
+	distributors = keys[startingIndex:numDistributors]
 
 	blockTimeMs := cliCtx.GlobalInt(BlockTimeFlag.Name)
 
