@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"math/big"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -19,15 +20,36 @@ import (
 
 var logger log.Logger
 
+type TxModeType string
+
+const (
+	Random TxModeType = "random"
+	Erc20  TxModeType = "erc20"
+	// Mix      TxModeType = "mix"
+)
+
 type TxOverload struct {
 	Distrbutor      *Distributor
 	BytesPerSecond  int
 	StartTime       time.Time
 	NumDistributors int
-	BlockTimeMs		  int
+	BlockTimeMs     int
+	TxMode          TxModeType
 }
 
 func (t *TxOverload) generateTxCandidate() (txmgr.TxCandidate, error) {
+	switch t.TxMode {
+	case Random:
+		return t.generateRandomTxCandidate()
+	case Erc20:
+		return t.generateErc20TxCandidate()
+		// case Mix:
+		// 	return t.generateMixTxCandidate()
+	}
+	return txmgr.TxCandidate{}, nil
+}
+
+func (t *TxOverload) generateRandomTxCandidate() (txmgr.TxCandidate, error) {
 	var to common.Address
 
 	data := make([]byte, t.BytesPerSecond)
@@ -43,6 +65,39 @@ func (t *TxOverload) generateTxCandidate() (txmgr.TxCandidate, error) {
 	}
 	return txmgr.TxCandidate{
 		To:       &to,
+		TxData:   data,
+		GasLimit: intrinsicGas,
+	}, nil
+}
+
+func (t *TxOverload) generateErc20TxCandidate() (txmgr.TxCandidate, error) {
+	amount := big.NewInt(0) // send 0 to don't mind about balance
+	// cUSD default address
+	tokenAddress := common.HexToAddress("0x765DE816845861e75A25fCA122bb6898B8B1282a")
+	toAddressHex := make([]byte, 20)
+	_, err := rand.Read(toAddressHex)
+	toAddress := common.BytesToAddress(toAddressHex)
+	paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
+	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
+	// Get the transfer function signature
+	// transferFnSignature := []byte("transfer(address,uint256)") // do not include spaces in the string
+	// hash := sha3.NewLegacyKeccak256()
+	// hash.Write(transferFnSignature)
+	// methodID := hash.Sum(nil)[:4]
+	// fmt.Println(hexutil.Encode(methodID)) // 0xa9059cbb
+	methodID := common.Hex2Bytes("a9059cbb")
+
+	var data []byte
+	data = append(data, methodID...)
+	data = append(data, paddedAddress...)
+	data = append(data, paddedAmount...)
+
+	intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
+	if err != nil {
+		return txmgr.TxCandidate{}, err
+	}
+	return txmgr.TxCandidate{
+		To:       &tokenAddress,
 		TxData:   data,
 		GasLimit: intrinsicGas,
 	}, nil
@@ -109,7 +164,8 @@ func Main(cliCtx *cli.Context) error {
 	}
 
 	numDistributors := cliCtx.GlobalInt(NumDistributors.Name)
-	distributors = keys[:numDistributors]
+	startingIndex := cliCtx.GlobalInt(StartingIndex.Name)
+	distributors = keys[startingIndex:numDistributors]
 
 	blockTimeMs := cliCtx.GlobalInt(BlockTimeFlag.Name)
 
@@ -131,9 +187,10 @@ func Main(cliCtx *cli.Context) error {
 
 	t := &TxOverload{
 		Distrbutor:      distributor,
+		TxMode:          TxModeType(cliCtx.GlobalString(TxModeFlag.Name)),
 		BytesPerSecond:  cliCtx.GlobalInt(DataRateFlag.Name),
 		NumDistributors: numDistributors,
-		BlockTimeMs: blockTimeMs,
+		BlockTimeMs:     blockTimeMs,
 	}
 	go t.Start()
 
