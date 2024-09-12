@@ -19,7 +19,7 @@ type Shard struct {
 	reqs chan txmgr.TxCandidate
 }
 
-const txBufferSize = 1000
+const txBufferSize = 3000
 
 var ErrQueueFull = errors.New("queue full")
 
