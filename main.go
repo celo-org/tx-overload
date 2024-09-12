@@ -165,7 +165,7 @@ func Main(cliCtx *cli.Context) error {
 
 	numDistributors := cliCtx.GlobalInt(NumDistributors.Name)
 	startingIndex := cliCtx.GlobalInt(StartingIndex.Name)
-	distributors = keys[startingIndex:numDistributors]
+	distributors = keys[startingIndex : startingIndex+numDistributors]
 
 	blockTimeMs := cliCtx.GlobalInt(BlockTimeFlag.Name)
 

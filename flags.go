@@ -46,7 +46,7 @@ var (
 )
 
 func init() {
-	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, BlockTimeFlag)
+	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, StartingIndex, BlockTimeFlag)
 	flags = append(flags, oplog.CLIFlags(envVarPrefix)...)
 	flags = append(flags, txmgr.CLIFlags(envVarPrefix)...)
 	flags = append(flags, opmetrics.CLIFlags(envVarPrefix)...)
