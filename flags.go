@@ -43,10 +43,16 @@ var (
 		Value:  1000,
 		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "BLOCK_TIME"),
 	}
+	TokenAddressFlag = cli.StringFlag{
+		Name:   "token-address",
+		Usage:  "ERC-20 contract targeted in 'erc20' tx mode. Defaults to cUSD on Celo mainnet.",
+		Value:  "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "TOKEN_ADDRESS"),
+	}
 )
 
 func init() {
-	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, StartingIndex, BlockTimeFlag)
+	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, StartingIndex, BlockTimeFlag, TokenAddressFlag)
 	flags = append(flags, oplog.CLIFlags(envVarPrefix)...)
 	flags = append(flags, txmgr.CLIFlags(envVarPrefix)...)
 	flags = append(flags, opmetrics.CLIFlags(envVarPrefix)...)

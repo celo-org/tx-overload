@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"os"
@@ -72,6 +73,7 @@ type TxOverload struct {
 	NumDistributors int
 	BlockTimeMs     int
 	TxMode          TxModeType
+	TokenAddress    common.Address
 }
 
 func (t *TxOverload) generateTxCandidate() (txmgr.TxCandidate, error) {
@@ -109,8 +111,7 @@ func (t *TxOverload) generateRandomTxCandidate() (txmgr.TxCandidate, error) {
 
 func (t *TxOverload) generateErc20TxCandidate() (txmgr.TxCandidate, error) {
 	amount := big.NewInt(0) // send 0 to don't mind about balance
-	// cUSD default address
-	tokenAddress := common.HexToAddress("0x765DE816845861e75A25fCA122bb6898B8B1282a")
+	tokenAddress := t.TokenAddress
 	toAddressHex := make([]byte, 20)
 	_, err := rand.Read(toAddressHex)
 	toAddress := common.BytesToAddress(toAddressHex)
@@ -206,6 +207,13 @@ func Main(cliCtx *cli.Context) error {
 
 	blockTimeMs := cliCtx.GlobalInt(BlockTimeFlag.Name)
 
+	// Rejected up front rather than silently zero-padded by HexToAddress, which
+	// would send every erc20 transfer to a garbage contract.
+	tokenAddress := cliCtx.GlobalString(TokenAddressFlag.Name)
+	if !common.IsHexAddress(tokenAddress) {
+		return fmt.Errorf("invalid --%s: %q", TokenAddressFlag.Name, tokenAddress)
+	}
+
 	metricsCfg := opmetrics.ReadCLIConfig(cliCtx)
 	m := NewMetrics()
 	if metricsCfg.Enabled {
@@ -228,6 +236,7 @@ func Main(cliCtx *cli.Context) error {
 		BytesPerSecond:  cliCtx.GlobalInt(DataRateFlag.Name),
 		NumDistributors: numDistributors,
 		BlockTimeMs:     blockTimeMs,
+		TokenAddress:    common.HexToAddress(tokenAddress),
 	}
 	go t.Start()
 

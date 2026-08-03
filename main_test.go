@@ -41,6 +41,30 @@ func TestIntrinsicGas(t *testing.T) {
 	}
 }
 
+// erc20 mode must target the configured token, not a hardcoded one, and must
+// still encode a well-formed transfer(address,uint256) call.
+func TestErc20CandidateUsesConfiguredToken(t *testing.T) {
+	token := common.HexToAddress("0x471EcE3750Da237f93B8E339c536989b8978a438")
+	tx := &TxOverload{TxMode: Erc20, TokenAddress: token}
+
+	c, err := tx.generateErc20TxCandidate()
+	if err != nil {
+		t.Fatalf("generateErc20TxCandidate: %v", err)
+	}
+	if c.To == nil || *c.To != token {
+		t.Errorf("To = %v, want %v", c.To, token)
+	}
+	if len(c.TxData) != 68 {
+		t.Fatalf("TxData length = %d, want 68 (4 selector + 32 addr + 32 amount)", len(c.TxData))
+	}
+	if got := common.Bytes2Hex(c.TxData[:4]); got != "a9059cbb" {
+		t.Errorf("selector = %s, want a9059cbb", got)
+	}
+	if c.GasLimit != 22400 {
+		t.Errorf("GasLimit = %d, want 22400 (EIP-7623 floor for this payload)", c.GasLimit)
+	}
+}
+
 // The floor must never price a payload below the legacy rule it supersedes.
 func TestIntrinsicGasNeverBelowLegacy(t *testing.T) {
 	for size := 0; size <= 2000; size += 250 {
