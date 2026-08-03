@@ -74,6 +74,7 @@ type TxOverload struct {
 	BlockTimeMs     int
 	TxMode          TxModeType
 	TokenAddress    common.Address
+	Erc20GasLimit   uint64
 }
 
 func (t *TxOverload) generateTxCandidate() (txmgr.TxCandidate, error) {
@@ -130,9 +131,15 @@ func (t *TxOverload) generateErc20TxCandidate() (txmgr.TxCandidate, error) {
 	data = append(data, paddedAddress...)
 	data = append(data, paddedAmount...)
 
+	// Intrinsic gas prices calldata only. A transfer against a real contract
+	// also has to pay for execution, so without the extra allowance every tx
+	// reverts out-of-gas at exactly the intrinsic floor.
 	gasLimit, err := intrinsicGas(data)
 	if err != nil {
 		return txmgr.TxCandidate{}, err
+	}
+	if t.Erc20GasLimit > gasLimit {
+		gasLimit = t.Erc20GasLimit
 	}
 	return txmgr.TxCandidate{
 		To:       &tokenAddress,
@@ -237,6 +244,7 @@ func Main(cliCtx *cli.Context) error {
 		NumDistributors: numDistributors,
 		BlockTimeMs:     blockTimeMs,
 		TokenAddress:    common.HexToAddress(tokenAddress),
+		Erc20GasLimit:   cliCtx.GlobalUint64(Erc20GasLimitFlag.Name),
 	}
 	go t.Start()
 

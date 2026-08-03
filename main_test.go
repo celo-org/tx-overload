@@ -45,7 +45,7 @@ func TestIntrinsicGas(t *testing.T) {
 // still encode a well-formed transfer(address,uint256) call.
 func TestErc20CandidateUsesConfiguredToken(t *testing.T) {
 	token := common.HexToAddress("0x471EcE3750Da237f93B8E339c536989b8978a438")
-	tx := &TxOverload{TxMode: Erc20, TokenAddress: token}
+	tx := &TxOverload{TxMode: Erc20, TokenAddress: token, Erc20GasLimit: 100_000}
 
 	c, err := tx.generateErc20TxCandidate()
 	if err != nil {
@@ -60,8 +60,8 @@ func TestErc20CandidateUsesConfiguredToken(t *testing.T) {
 	if got := common.Bytes2Hex(c.TxData[:4]); got != "a9059cbb" {
 		t.Errorf("selector = %s, want a9059cbb", got)
 	}
-	if c.GasLimit != 22400 {
-		t.Errorf("GasLimit = %d, want 22400 (EIP-7623 floor for this payload)", c.GasLimit)
+	if c.GasLimit != 100_000 {
+		t.Errorf("GasLimit = %d, want 100000 (execution allowance, not the 22400 intrinsic floor)", c.GasLimit)
 	}
 }
 
