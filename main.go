@@ -15,8 +15,45 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/urfave/cli"
 )
+
+// EIP-7623 raised the floor cost of calldata. The vendored go-ethereum
+// (op-geth v1.11.2, March 2023) predates the rule, so core.IntrinsicGas alone
+// under-prices every calldata-bearing transaction on a Prague chain and the
+// node rejects it with "intrinsic gas too low".
+const (
+	standardTokenCost      = 4
+	totalCostFloorPerToken = 10
+)
+
+// intrinsicGasFloor returns the EIP-7623 floor: 21000 + 10 * tokens, where a
+// zero calldata byte counts as one token and a non-zero byte as four.
+func intrinsicGasFloor(data []byte) uint64 {
+	var tokens uint64
+	for _, b := range data {
+		if b == 0 {
+			tokens++
+		} else {
+			tokens += standardTokenCost
+		}
+	}
+	return params.TxGas + totalCostFloorPerToken*tokens
+}
+
+// intrinsicGas prices a calldata payload under both the legacy rule and the
+// EIP-7623 floor, returning whichever is higher.
+func intrinsicGas(data []byte) (uint64, error) {
+	gas, err := core.IntrinsicGas(data, nil, false, true, true, false)
+	if err != nil {
+		return 0, err
+	}
+	if floor := intrinsicGasFloor(data); floor > gas {
+		return floor, nil
+	}
+	return gas, nil
+}
 
 var logger log.Logger
 
@@ -59,14 +96,14 @@ func (t *TxOverload) generateRandomTxCandidate() (txmgr.TxCandidate, error) {
 		return txmgr.TxCandidate{}, err
 	}
 
-	intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
+	gasLimit, err := intrinsicGas(data)
 	if err != nil {
 		return txmgr.TxCandidate{}, err
 	}
 	return txmgr.TxCandidate{
 		To:       &to,
 		TxData:   data,
-		GasLimit: intrinsicGas,
+		GasLimit: gasLimit,
 	}, nil
 }
 
@@ -92,14 +129,14 @@ func (t *TxOverload) generateErc20TxCandidate() (txmgr.TxCandidate, error) {
 	data = append(data, paddedAddress...)
 	data = append(data, paddedAmount...)
 
-	intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
+	gasLimit, err := intrinsicGas(data)
 	if err != nil {
 		return txmgr.TxCandidate{}, err
 	}
 	return txmgr.TxCandidate{
 		To:       &tokenAddress,
 		TxData:   data,
-		GasLimit: intrinsicGas,
+		GasLimit: gasLimit,
 	}, nil
 }
 
