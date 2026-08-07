@@ -22,6 +22,12 @@ var (
 		Value:  "random",
 		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "TX_MODE"),
 	}
+	SenderSelectionFlag = cli.StringFlag{
+		Name:   "sender-selection",
+		Usage:  "sender selection strategy. Valid values are 'random' and 'round-robin'.",
+		Value:  string(SenderSelectionRandom),
+		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "SENDER_SELECTION"),
+	}
 	DataRateFlag = cli.Int64Flag{
 		Name:   "data-rate",
 		Usage:  "data rate in bytes per second.",
@@ -59,7 +65,7 @@ var (
 )
 
 func init() {
-	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, StartingIndex, BlockTimeFlag, TokenAddressFlag, Erc20GasLimitFlag)
+	flags = append(flags, EthRpcFlag, TxModeFlag, SenderSelectionFlag, DataRateFlag, NumDistributors, StartingIndex, BlockTimeFlag, TokenAddressFlag, Erc20GasLimitFlag)
 	flags = append(flags, oplog.CLIFlags(envVarPrefix)...)
 	flags = append(flags, txmgr.CLIFlags(envVarPrefix)...)
 	flags = append(flags, opmetrics.CLIFlags(envVarPrefix)...)
