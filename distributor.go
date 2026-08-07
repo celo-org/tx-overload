@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"time"
 
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
@@ -24,15 +23,22 @@ const txBufferSize = 3000
 var ErrQueueFull = errors.New("queue full")
 
 type Distributor struct {
-	m      *Metrics
-	root   *txmgr.SimpleTxManager
-	shards []Shard
-	client *ethclient.Client
-	logger log.Logger
-	cancel chan struct{}
+	m        *Metrics
+	root     *txmgr.SimpleTxManager
+	shards   []Shard
+	selector *senderSelector
+	client   *ethclient.Client
+	logger   log.Logger
+	cancel   chan struct{}
 }
 
-func NewDistributor(txmgrCfg txmgr.CLIConfig, l log.Logger, m *Metrics) (*Distributor, error) {
+type DistributorConfig struct {
+	TxManager       txmgr.CLIConfig
+	SenderSelection SenderSelection
+}
+
+func NewDistributor(config DistributorConfig, l log.Logger, m *Metrics) (*Distributor, error) {
+	txmgrCfg := config.TxManager
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	client, err := ethclient.DialContext(ctx, txmgrCfg.L1RPCURL)
@@ -75,12 +81,13 @@ func NewDistributor(txmgrCfg txmgr.CLIConfig, l log.Logger, m *Metrics) (*Distri
 	}
 
 	return &Distributor{
-		m:      m,
-		root:   root,
-		shards: shards,
-		client: client,
-		logger: l,
-		cancel: make(chan struct{}),
+		m:        m,
+		root:     root,
+		shards:   shards,
+		selector: newSenderSelector(config.SenderSelection),
+		client:   client,
+		logger:   l,
+		cancel:   make(chan struct{}),
 	}, nil
 }
 
@@ -97,7 +104,7 @@ func (d *Distributor) Stop() {
 }
 
 func (d *Distributor) Send(ctx context.Context, tx txmgr.TxCandidate) error {
-	shard := d.shards[rand.Intn(len(d.shards))]
+	shard := d.shards[d.selector.nextIndex(len(d.shards))]
 	select {
 	case shard.reqs <- tx:
 		d.m.RecordQueuedTx(&tx)

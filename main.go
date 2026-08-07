@@ -213,6 +213,10 @@ func Main(cliCtx *cli.Context) error {
 	distributors = keys[startingIndex : startingIndex+numDistributors]
 
 	blockTimeMs := cliCtx.GlobalInt(BlockTimeFlag.Name)
+	senderSelection, err := parseSenderSelection(cliCtx.GlobalString(SenderSelectionFlag.Name))
+	if err != nil {
+		return err
+	}
 
 	// Rejected up front rather than silently zero-padded by HexToAddress, which
 	// would send every erc20 transfer to a garbage contract.
@@ -232,7 +236,10 @@ func Main(cliCtx *cli.Context) error {
 		}()
 	}
 
-	distributor, err := NewDistributor(txmgrCfg, logger, m)
+	distributor, err := NewDistributor(DistributorConfig{
+		TxManager:       txmgrCfg,
+		SenderSelection: senderSelection,
+	}, logger, m)
 	if err != nil {
 		return err
 	}
