@@ -11,8 +11,13 @@ go build
     --eth-rpc http://localhost:8545 \
     --private-key <private_key> \
     --num-distributors 10 \
+    --sender-selection round-robin \
     --data-rate 1000 \
 ```
+
+`--sender-selection` defaults to `random`. Use `round-robin` to rotate across
+configured sender accounts in order. It can also be set with
+`TX_OVERLOAD_SENDER_SELECTION`.
 
 More options are avaiable:
 ```
