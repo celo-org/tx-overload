@@ -1,0 +1,41 @@
+---
+name: Release Optimism tx-overload Container
+
+on:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  resolve-tag:
+    name: Resolve short commit sha
+    runs-on: ubuntu-24.04
+    outputs:
+      short-sha: ${{ steps.short-sha.outputs.value }}
+    steps:
+      - name: Shorten the commit sha
+        id: short-sha
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: echo "value=${COMMIT_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+  release-container-op-tx-overload:
+    needs: resolve-tag
+    uses: celo-org/reusable-workflows/.github/workflows/docker-build.yaml@v3.1.1
+    name: Release Optimism tx-overload image container
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+      pull-requests: write
+      security-events: write
+    with:
+      artifact-registry: us-west1-docker.pkg.dev/devopsre/dev-images/tx-overload
+      tags: sha-${{ needs.resolve-tag.outputs.short-sha }}
+      platforms: linux/amd64
+      workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-tx-overload/providers/github-by-repos
+      service-account: tx-overload@devopsre.iam.gserviceaccount.com
+      context: .
+      file: Dockerfile
+      trivy-enabled: false
