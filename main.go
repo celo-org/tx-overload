@@ -75,6 +75,7 @@ type TxOverload struct {
 	TxMode          TxModeType
 	TokenAddress    common.Address
 	Erc20GasLimit   uint64
+	Erc20Padding    int
 }
 
 func (t *TxOverload) generateTxCandidate() (txmgr.TxCandidate, error) {
@@ -131,15 +132,29 @@ func (t *TxOverload) generateErc20TxCandidate() (txmgr.TxCandidate, error) {
 	data = append(data, paddedAddress...)
 	data = append(data, paddedAmount...)
 
+	// Solidity's ABI decoder only checks calldatasize() >= 4+64 for a fixed-arg
+	// external function, so trailing bytes are ignored and transfer() still
+	// executes. The padding exists purely to buy calldata/DA cost.
+	if t.Erc20Padding > 0 {
+		pad := make([]byte, t.Erc20Padding)
+		if _, err := rand.Read(pad); err != nil {
+			return txmgr.TxCandidate{}, err
+		}
+		data = append(data, pad...)
+	}
+
 	// Intrinsic gas prices calldata only. A transfer against a real contract
 	// also has to pay for execution, so without the extra allowance every tx
-	// reverts out-of-gas at exactly the intrinsic floor.
+	// reverts out-of-gas at exactly the intrinsic floor. Add the allowance on
+	// top of intrinsic rather than max()-ing against it: with padding the
+	// intrinsic cost alone exceeds Erc20GasLimit, and max() would leave zero
+	// headroom for execution.
 	gasLimit, err := intrinsicGas(data)
 	if err != nil {
 		return txmgr.TxCandidate{}, err
 	}
-	if t.Erc20GasLimit > gasLimit {
-		gasLimit = t.Erc20GasLimit
+	if t.Erc20GasLimit > params.TxGas {
+		gasLimit += t.Erc20GasLimit - params.TxGas
 	}
 	return txmgr.TxCandidate{
 		To:       &tokenAddress,
@@ -245,6 +260,7 @@ func Main(cliCtx *cli.Context) error {
 		BlockTimeMs:     blockTimeMs,
 		TokenAddress:    common.HexToAddress(tokenAddress),
 		Erc20GasLimit:   cliCtx.GlobalUint64(Erc20GasLimitFlag.Name),
+		Erc20Padding:    cliCtx.GlobalInt(Erc20PaddingBytesFlag.Name),
 	}
 	go t.Start()
 

@@ -56,10 +56,19 @@ var (
 		Value:  100_000,
 		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "ERC20_GAS_LIMIT"),
 	}
+	Erc20PaddingBytesFlag = cli.IntFlag{
+		Name: "erc20-padding-bytes",
+		Usage: "Extra calldata bytes appended after the transfer() arguments in " +
+			"'erc20' tx mode. Solidity's ABI decoder ignores trailing calldata for " +
+			"fixed-arg functions, so the transfer still executes - the padding just " +
+			"buys batcher/DA cost. 0 keeps the plain 68-byte payload.",
+		Value:  0,
+		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "ERC20_PADDING_BYTES"),
+	}
 )
 
 func init() {
-	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, StartingIndex, BlockTimeFlag, TokenAddressFlag, Erc20GasLimitFlag)
+	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, StartingIndex, BlockTimeFlag, TokenAddressFlag, Erc20GasLimitFlag, Erc20PaddingBytesFlag)
 	flags = append(flags, oplog.CLIFlags(envVarPrefix)...)
 	flags = append(flags, txmgr.CLIFlags(envVarPrefix)...)
 	flags = append(flags, opmetrics.CLIFlags(envVarPrefix)...)

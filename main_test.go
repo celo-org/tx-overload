@@ -60,8 +60,45 @@ func TestErc20CandidateUsesConfiguredToken(t *testing.T) {
 	if got := common.Bytes2Hex(c.TxData[:4]); got != "a9059cbb" {
 		t.Errorf("selector = %s, want a9059cbb", got)
 	}
-	if c.GasLimit != 100_000 {
-		t.Errorf("GasLimit = %d, want 100000 (execution allowance, not the 22400 intrinsic floor)", c.GasLimit)
+	// 22400 intrinsic + (100000-21000) execution allowance.
+	if c.GasLimit != 101_400 {
+		t.Errorf("GasLimit = %d, want 101400 (intrinsic + execution allowance)", c.GasLimit)
+	}
+}
+
+// Padding must ride along as trailing calldata - the selector and both
+// arguments stay byte-identical, so transfer() still executes - and the gas
+// limit must keep execution headroom above the (much larger) intrinsic floor.
+func TestErc20CandidatePadding(t *testing.T) {
+	token := common.HexToAddress("0x471EcE3750Da237f93B8E339c536989b8978a438")
+	const pad = 10_000
+	tx := &TxOverload{TxMode: Erc20, TokenAddress: token, Erc20GasLimit: 100_000, Erc20Padding: pad}
+
+	c, err := tx.generateErc20TxCandidate()
+	if err != nil {
+		t.Fatalf("generateErc20TxCandidate: %v", err)
+	}
+	if len(c.TxData) != 68+pad {
+		t.Fatalf("TxData length = %d, want %d", len(c.TxData), 68+pad)
+	}
+	if got := common.Bytes2Hex(c.TxData[:4]); got != "a9059cbb" {
+		t.Errorf("selector = %s, want a9059cbb", got)
+	}
+	// amount argument (bytes 36..68) must still decode as 0, not be clobbered.
+	if !bytes.Equal(c.TxData[36:68], make([]byte, 32)) {
+		t.Errorf("amount argument corrupted by padding")
+	}
+	intrinsic, err := intrinsicGas(c.TxData)
+	if err != nil {
+		t.Fatalf("intrinsicGas: %v", err)
+	}
+	if c.GasLimit != intrinsic+79_000 {
+		t.Errorf("GasLimit = %d, want %d (intrinsic %d + 79000 allowance)", c.GasLimit, intrinsic+79_000, intrinsic)
+	}
+	// Without the additive fix this would collapse to the intrinsic floor and
+	// every transfer would revert out-of-gas.
+	if c.GasLimit <= intrinsic {
+		t.Errorf("GasLimit %d leaves no execution headroom above intrinsic %d", c.GasLimit, intrinsic)
 	}
 }
 
