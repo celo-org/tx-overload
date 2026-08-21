@@ -24,15 +24,16 @@ const txBufferSize = 3000
 var ErrQueueFull = errors.New("queue full")
 
 type Distributor struct {
-	m      *Metrics
-	root   *txmgr.SimpleTxManager
-	shards []Shard
-	client *ethclient.Client
-	logger log.Logger
-	cancel chan struct{}
+	m          *Metrics
+	root       *txmgr.SimpleTxManager
+	shards     []Shard
+	lowBalance *big.Int
+	client     *ethclient.Client
+	logger     log.Logger
+	cancel     chan struct{}
 }
 
-func NewDistributor(txmgrCfg txmgr.CLIConfig, l log.Logger, m *Metrics) (*Distributor, error) {
+func NewDistributor(txmgrCfg txmgr.CLIConfig, l log.Logger, m *Metrics, lowBalanceCelo float64) (*Distributor, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	client, err := ethclient.DialContext(ctx, txmgrCfg.L1RPCURL)
@@ -74,13 +75,17 @@ func NewDistributor(txmgrCfg txmgr.CLIConfig, l log.Logger, m *Metrics) (*Distri
 		shards = append(shards, Shard{tm, make(chan txmgr.TxCandidate, txBufferSize)})
 	}
 
+	// CELO -> wei without float64 losing the low-order digits.
+	lowBalance, _ := new(big.Float).Mul(big.NewFloat(lowBalanceCelo), big.NewFloat(params.Ether)).Int(nil)
+
 	return &Distributor{
-		m:      m,
-		root:   root,
-		shards: shards,
-		client: client,
-		logger: l,
-		cancel: make(chan struct{}),
+		m:          m,
+		lowBalance: lowBalance,
+		root:       root,
+		shards:     shards,
+		client:     client,
+		logger:     l,
+		cancel:     make(chan struct{}),
 	}, nil
 }
 
@@ -134,7 +139,7 @@ func (d *Distributor) airdrop() {
 		cancel()
 	}()
 
-	lowBalance := new(big.Int).Mul(big.NewInt(100_000_000), big.NewInt(params.GWei)) // 0.1 ETH
+	lowBalance := d.lowBalance
 	topOffAmount := new(big.Int).Mul(lowBalance, big.NewInt(3))
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()

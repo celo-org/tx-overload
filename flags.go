@@ -65,10 +65,18 @@ var (
 		Value:  0,
 		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "ERC20_PADDING_BYTES"),
 	}
+	AirdropLowBalanceFlag = cli.Float64Flag{
+		Name: "airdrop-low-balance",
+		Usage: "Shard balance in CELO below which the root tops it up (top-up is 3x " +
+			"this). The root airdrops serially, so at high gas rates the default 0.1 " +
+			"cannot refill 100 shards fast enough and they stall on 'insufficient funds'.",
+		Value:  0.1,
+		EnvVar: opservice.PrefixEnvVar(envVarPrefix, "AIRDROP_LOW_BALANCE"),
+	}
 )
 
 func init() {
-	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, StartingIndex, BlockTimeFlag, TokenAddressFlag, Erc20GasLimitFlag, Erc20PaddingBytesFlag)
+	flags = append(flags, EthRpcFlag, TxModeFlag, DataRateFlag, NumDistributors, StartingIndex, BlockTimeFlag, TokenAddressFlag, Erc20GasLimitFlag, Erc20PaddingBytesFlag, AirdropLowBalanceFlag)
 	flags = append(flags, oplog.CLIFlags(envVarPrefix)...)
 	flags = append(flags, txmgr.CLIFlags(envVarPrefix)...)
 	flags = append(flags, opmetrics.CLIFlags(envVarPrefix)...)

@@ -247,7 +247,7 @@ func Main(cliCtx *cli.Context) error {
 		}()
 	}
 
-	distributor, err := NewDistributor(txmgrCfg, logger, m)
+	distributor, err := NewDistributor(txmgrCfg, logger, m, cliCtx.GlobalFloat64(AirdropLowBalanceFlag.Name))
 	if err != nil {
 		return err
 	}

@@ -60,9 +60,15 @@ func TestErc20CandidateUsesConfiguredToken(t *testing.T) {
 	if got := common.Bytes2Hex(c.TxData[:4]); got != "a9059cbb" {
 		t.Errorf("selector = %s, want a9059cbb", got)
 	}
-	// 22400 intrinsic + (100000-21000) execution allowance.
-	if c.GasLimit != 101_400 {
-		t.Errorf("GasLimit = %d, want 101400 (intrinsic + execution allowance)", c.GasLimit)
+	// Intrinsic + (100000-21000) execution allowance. Computed rather than
+	// hardcoded: the recipient is random, so a zero byte in the address drops
+	// the EIP-7623 token count and with it the intrinsic cost.
+	intrinsic, err := intrinsicGas(c.TxData)
+	if err != nil {
+		t.Fatalf("intrinsicGas: %v", err)
+	}
+	if c.GasLimit != intrinsic+79_000 {
+		t.Errorf("GasLimit = %d, want %d (intrinsic %d + 79000 allowance)", c.GasLimit, intrinsic+79_000, intrinsic)
 	}
 }
 
